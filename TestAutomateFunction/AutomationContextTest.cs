@@ -30,7 +30,7 @@ public sealed class AutomationContextTest : IDisposable
         {
             // TODO - NOT ABLE TO FETCH FROM DIFFERENT PROJECT !!!
             // LCADataProjectID = "2e2fbd4a58", // "b613e0ba83",
-            LCADataModelID = "40cef655c2", // "4547433144",
+            LCADataModelID = "67adb187e6", // "4547433144",
         };
 
         var automationRunData = await TestAutomateUtils.CreateTestRun(client);

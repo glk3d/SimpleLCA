@@ -143,12 +143,14 @@ public static class AutomateFunction
 
     private static async Task<List<LCAValue>> GetLCAValues(AutomationContext automationContext, FunctionInputs functionInputs)
     {
+        /*
         if (string.IsNullOrEmpty(functionInputs.LCADataProjectID))
             functionInputs.LCADataProjectID = automationContext.AutomationRunData.ProjectId;
+        */
 
         // find latest excel lca
         var streams = await automationContext.SpeckleClient
-            .StreamGetBranches(functionInputs.LCADataProjectID);
+            .StreamGetBranches(automationContext.AutomationRunData.ProjectId /*functionInputs.LCADataProjectID */);
 
         var latestObjectId = streams
             .Where(s => s.id == functionInputs.LCADataModelID)
@@ -159,7 +161,9 @@ public static class AutomateFunction
         // var directExcel = await automationContext.SpeckleClient.ModelGet(functionInputs.LCADataProjectID, functionInputs.LCADataModelID);
 
         // receive excel lca
-        var transport = new ServerTransport(automationContext.SpeckleClient.Account, functionInputs.LCADataProjectID);
+        var transport = new ServerTransport(
+            automationContext.SpeckleClient.Account,
+            automationContext.AutomationRunData.ProjectId/*functionInputs.LCADataProjectID*/);
         var commitData = await Operations.Receive(latestObjectId, transport);
 
         var data = new List<object>();
