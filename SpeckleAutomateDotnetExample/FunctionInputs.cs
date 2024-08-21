@@ -9,24 +9,9 @@ using System.ComponentModel.DataAnnotations;
 /// are valid and match the required schema.
 public struct FunctionInputs
 {
-  /// <summary>
-  /// The object type to count instances of in the given model version.
-  /// </summary>
-  [Required]
-  public string SpeckleTypeToCount;
+    [Required]
+    public string LCADataProjectID;
 
-  /// <summary>
-  /// The total number of the specified type expected.
-  /// </summary>
-  [DefaultValue(10)]
-  [Range(1, 100)]
-  [Required]
-  public int SpeckleTypeTargetCount;
-
-  /// <summary>
-  /// An arbitrary example of using a secret input value.
-  /// </summary>
-  [Required]
-  [Secret]
-  public string ExternalServiceKey;
+    [Required]
+    public string LCADataModelID;
 }

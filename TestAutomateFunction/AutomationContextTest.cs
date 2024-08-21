@@ -9,43 +9,43 @@ using Speckle.Core.Credentials;
 public sealed class AutomationContextTest : IDisposable
 {
 
-  private Client client;
-  private Account account;
+    private Client client;
+    private Account account;
 
-  [OneTimeSetUp]
-  public void Setup()
-  {
-    account = new Account
+    [OneTimeSetUp]
+    public void Setup()
     {
-      token = TestAutomateEnvironment.GetSpeckleToken(),
-      serverInfo = new ServerInfo { url = TestAutomateEnvironment.GetSpeckleServerUrl().ToString() }
-    };
-    client = new Client(account);
-  }
+        account = new Account
+        {
+            token = TestAutomateEnvironment.GetSpeckleToken(),
+            serverInfo = new ServerInfo { url = TestAutomateEnvironment.GetSpeckleServerUrl().ToString() }
+        };
+        client = new Client(account);
+    }
 
-  [Test]
-  public async Task TestFunctionRun()
-  {
-    var inputs = new FunctionInputs
+    [Test]
+    public async Task TestFunctionRun()
     {
-      SpeckleTypeToCount = "Base",
-      SpeckleTypeTargetCount = 1
-    };
+        var inputs = new FunctionInputs
+        {
+            LCADataProjectID = "2e2fbd4a58", // "b613e0ba83",
+            LCADataModelID = "40cef655c2", // "4547433144",
+        };
 
-    var automationRunData = await TestAutomateUtils.CreateTestRun(client);
-    var automationContext = await AutomationRunner.RunFunction(
-      AutomateFunction.Run,
-      automationRunData,
-      account.token,
-      inputs
-    );
+        var automationRunData = await TestAutomateUtils.CreateTestRun(client);
+        var automationContext = await AutomationRunner.RunFunction(
+          AutomateFunction.Run,
+          automationRunData,
+          account.token,
+          inputs
+        );
 
-    Assert.That(automationContext.RunStatus, Is.EqualTo("SUCCEEDED"));
-  }
+        Assert.That(automationContext.RunStatus, Is.EqualTo("SUCCEEDED"));
+    }
 
-  public void Dispose()
-  {
-    client.Dispose();
-    TestAutomateEnvironment.Clear();
-  }
+    public void Dispose()
+    {
+        client.Dispose();
+        TestAutomateEnvironment.Clear();
+    }
 }
