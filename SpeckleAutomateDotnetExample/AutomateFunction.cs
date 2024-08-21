@@ -47,49 +47,58 @@ public static class AutomateFunction
         {
             if (automationContext.RunStatus == "FAILED") return;
             if (model is null || model.elements is null) continue;
-            if (model.elements.OfType<Element1D>().Any() || model.elements.OfType<Element2D>().Any())
+            if (!model.elements.OfType<Element1D>().Any() && !model.elements.OfType<Element2D>().Any())
             {
                 automationContext.MarkRunFailed($"No elements of type {typeof(Element1D)} or {typeof(Element2D)} were found.");
                 return;
             }
 
             // get elements grouped by material
-            var materialGroups = model.elements
+            var materialFamily = model.elements
                 .GroupBy(e =>
                 e is Element1D e1d ? e1d.property.material.name :
                 e is Element2D e2d ? e2d.property.material.name :
                 null)
                 .Where(g => g.Key != null);
 
-            if (materialGroups is null || materialGroups.Count() == 0)
+            if (materialFamily is null || materialFamily.Count() == 0)
             {
                 automationContext.MarkRunFailed("Could not group elements by material.");
                 return;
             }
 
             // calculate lca and attach to elements
-            foreach (var group in materialGroups)
+            foreach (var material in materialFamily)
             {
                 materialCount++;
 
-                var lca = lcaData.FirstOrDefault(i => i.Type == group.Key);
-                foreach (var element in group)
+                // TODO - NEEDS GROUPING BY FAMILY/Material (Concrete) AND TYPE (C8/10)
+                LCAValue lca;
+                if (material.Key == "Steel")
+                    lca = lcaData.FirstOrDefault(i => i.Type == "Hot Rolled Steel Open Section");
+                else
+                    lca = lcaData.FirstOrDefault(i => i.Type == material.Key);
+
+                if (string.IsNullOrEmpty(lca.Material) || string.IsNullOrEmpty(lca.Type))
+                    automationContext.MarkRunException("Some LCA values could not be found. Maybe they are missing in the database.");
+
+                foreach (var element in material)
                 {
                     // some material get calculated by weight others by volume
                     if (lca.Unit == "kg")
                     {
                         CreateAndAttachLCA(
                             element,
-                            Convert.ToDouble(element["Weight"]) * lca.StageABC,
-                            Convert.ToDouble(element["Weight"]) * lca.StageD);
+                            Convert.ToDouble(element["@Weight"]) * lca.StageABC,
+                            Convert.ToDouble(element["@Weight"]) * lca.StageD);
                     }
 
                     if (lca.Unit == "m3")
                     {
                         CreateAndAttachLCA(
                             element,
-                            Convert.ToDouble(element["Volume"]) * lca.StageABC,
-                            Convert.ToDouble(element["Volume"]) * lca.StageD);
+                            Convert.ToDouble(element["@Volume"]) * lca.StageABC,
+                            Convert.ToDouble(element["@Volume"]) * lca.StageD);
                     }
 
                     elemCount++;
