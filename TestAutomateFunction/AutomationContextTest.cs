@@ -28,7 +28,8 @@ public sealed class AutomationContextTest : IDisposable
     {
         var inputs = new FunctionInputs
         {
-            LCADataProjectID = "2e2fbd4a58", // "b613e0ba83",
+            // TODO - NOT ABLE TO FETCH FROM DIFFERENT PROJECT !!!
+            // LCADataProjectID = "2e2fbd4a58", // "b613e0ba83",
             LCADataModelID = "40cef655c2", // "4547433144",
         };
 

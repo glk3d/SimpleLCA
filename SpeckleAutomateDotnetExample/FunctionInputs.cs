@@ -9,8 +9,8 @@ using System.ComponentModel.DataAnnotations;
 /// are valid and match the required schema.
 public struct FunctionInputs
 {
-    [Required]
-    public string LCADataProjectID;
+    // [Required]
+    // public string LCADataProjectID;
 
     [Required]
     public string LCADataModelID;
