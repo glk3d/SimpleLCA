@@ -46,7 +46,8 @@ public static class AutomateFunction
         {
             if (automationContext.RunStatus == "FAILED") return;
             if (model is null || model.elements is null) continue;
-            if (!model.elements.OfType<Element1D>().Any() && !model.elements.OfType<Element2D>().Any())
+            if (!model.elements.OfType<Element1D>().Any() &&
+                !model.elements.OfType<Element2D>().Any())
             {
                 automationContext.MarkRunFailed($"No elements of type {typeof(Element1D)} or {typeof(Element2D)} were found.");
                 return;
@@ -94,18 +95,35 @@ public static class AutomateFunction
                         // some material get calculated by weight others by volume
                         if (lcaValue.Unit == "kg")
                         {
-                            CreateAndAttachLCA(
-                                element,
-                                Convert.ToDouble(element["@Weight"]) * lcaValue.StageABC,
-                                Convert.ToDouble(element["@Weight"]) * lcaValue.StageD);
+                            if (element["@Weight"] != null)
+                                CreateAndAttachLCA(
+                                    element,
+                                    Convert.ToDouble(element["@Weight"]) * lcaValue.StageABC,
+                                    Convert.ToDouble(element["@Weight"]) * lcaValue.StageD);
+                            else if (element["Weight"] != null)
+                                CreateAndAttachLCA(
+                                    element,
+                                    Convert.ToDouble(element["Weight"]) * lcaValue.StageABC,
+                                    Convert.ToDouble(element["Weight"]) * lcaValue.StageD);
+                            else
+                                automationContext.MarkRunException("Some elements did not have their weights attached.");
+
                         }
 
                         if (lcaValue.Unit == "m3")
                         {
-                            CreateAndAttachLCA(
-                                element,
-                                Convert.ToDouble(element["@Volume"]) * lcaValue.StageABC,
-                                Convert.ToDouble(element["@Volume"]) * lcaValue.StageD);
+                            if (element["@Volume"] != null)
+                                CreateAndAttachLCA(
+                                    element,
+                                    Convert.ToDouble(element["@Volume"]) * lcaValue.StageABC,
+                                    Convert.ToDouble(element["@Volume"]) * lcaValue.StageD);
+                            else if (element["Volume"] != null)
+                                CreateAndAttachLCA(
+                                    element,
+                                    Convert.ToDouble(element["Volume"]) * lcaValue.StageABC,
+                                    Convert.ToDouble(element["Volume"]) * lcaValue.StageD);
+                            else
+                                automationContext.MarkRunException("Some elements did not have their weights attached.");
                         }
 
                         elemCount++;
