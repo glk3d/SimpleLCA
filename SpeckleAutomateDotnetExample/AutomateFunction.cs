@@ -13,9 +13,9 @@ public static class AutomateFunction
 {
     private struct LCAValue
     {
-        public string Material { get; set; }
+        public string MaterialFamily { get; set; }
 
-        public string Type { get; set; }
+        public string MaterialGrade { get; set; }
 
         public double StageABC { get; set; }
 
@@ -30,7 +30,6 @@ public static class AutomateFunction
 
         // get newly pushed model
         var commitData = await automationContext.ReceiveVersion();
-
         var currentStream = await automationContext.SpeckleClient
             .ModelGet(
             automationContext.AutomationRunData.ProjectId,
@@ -56,52 +55,61 @@ public static class AutomateFunction
             // get elements grouped by material
             var materialFamily = model.elements
                 .GroupBy(e =>
-                e is Element1D e1d ? e1d.property.material.name :
-                e is Element2D e2d ? e2d.property.material.name :
+                e is Element1D e1d ? e1d.property.material.materialType.ToString() : // .name :
+                e is Element2D e2d ? e2d.property.material.materialType.ToString() : // .name :
                 null)
-                .Where(g => g.Key != null);
+                .Where(group => group.Key != null);
 
             if (materialFamily is null || materialFamily.Count() == 0)
             {
-                automationContext.MarkRunFailed("Could not group elements by material.");
+                automationContext.MarkRunFailed("Could not group elements by material family.");
                 return;
             }
 
             // calculate lca and attach to elements
-            foreach (var material in materialFamily)
+            foreach (var family in materialFamily)
             {
-                materialCount++;
+                var materialGrades = family
+                    .GroupBy(e =>
+                    e is Element1D e1d ? e1d.property.material.name :
+                    e is Element2D e2d ? e2d.property.material.name :
+                    null)
+                    .Where(g => g.Key != null);
 
-                // TODO - NEEDS GROUPING BY FAMILY/Material (Concrete) AND TYPE (C8/10)
-                LCAValue lca;
-                if (material.Key == "Steel")
-                    lca = lcaData.FirstOrDefault(i => i.Type == "Hot Rolled Steel Open Section");
-                else
-                    lca = lcaData.FirstOrDefault(i => i.Type == material.Key);
-
-                if (string.IsNullOrEmpty(lca.Material) || string.IsNullOrEmpty(lca.Type))
-                    automationContext.MarkRunException("Some LCA values could not be found. Maybe they are missing in the database.");
-
-                foreach (var element in material)
+                // select lca based on material family name (Concrete, Timber, Steel...) - if any provided
+                var lcaValue = lcaData.FirstOrDefault(l => l.MaterialFamily == family.Key); // default
+                foreach (var grade in materialGrades)
                 {
-                    // some material get calculated by weight others by volume
-                    if (lca.Unit == "kg")
-                    {
-                        CreateAndAttachLCA(
-                            element,
-                            Convert.ToDouble(element["@Weight"]) * lca.StageABC,
-                            Convert.ToDouble(element["@Weight"]) * lca.StageD);
-                    }
+                    materialCount++;
+                    // select lca based on material grade - if any provided
+                    if (lcaData.Any(l => l.MaterialGrade == grade.Key))
+                        lcaValue = lcaData.FirstOrDefault(i => i.MaterialGrade == grade.Key);
 
-                    if (lca.Unit == "m3")
-                    {
-                        CreateAndAttachLCA(
-                            element,
-                            Convert.ToDouble(element["@Volume"]) * lca.StageABC,
-                            Convert.ToDouble(element["@Volume"]) * lca.StageD);
-                    }
+                    if (string.IsNullOrEmpty(lcaValue.MaterialFamily) ||
+                        string.IsNullOrEmpty(lcaValue.MaterialGrade))
+                        automationContext.MarkRunException("Some LCA values could not be found. Maybe they are missing in the database.");
 
-                    elemCount++;
+                    foreach (var element in family)
+                    {
+                        // some material get calculated by weight others by volume
+                        if (lcaValue.Unit == "kg")
+                        {
+                            CreateAndAttachLCA(
+                                element,
+                                Convert.ToDouble(element["@Weight"]) * lcaValue.StageABC,
+                                Convert.ToDouble(element["@Weight"]) * lcaValue.StageD);
+                        }
+
+                        if (lcaValue.Unit == "m3")
+                        {
+                            CreateAndAttachLCA(
+                                element,
+                                Convert.ToDouble(element["@Volume"]) * lcaValue.StageABC,
+                                Convert.ToDouble(element["@Volume"]) * lcaValue.StageD);
+                        }
+
+                        elemCount++;
+                    }
                 }
             }
         }
@@ -205,8 +213,8 @@ public static class AutomateFunction
             lcaValuesList.Add(
                 new LCAValue()
                 {
-                    Material = Convert.ToString(item[0]),
-                    Type = item[1] as string,
+                    MaterialFamily = Convert.ToString(item[0]),
+                    MaterialGrade = item[1] as string,
                     StageABC = stageABC,
                     StageD = stageD,
                     Unit = item[4] as string,
